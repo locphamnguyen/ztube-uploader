@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YT Studio Uploader</title>
+  <link rel="stylesheet" href="uploader.css">
+</head>
+<body>
+  <header>
+    <h1>YT Studio Uploader</h1>
+    <p class="sub">Đăng video theo <code>queue.json</code> bằng tab YouTube Studio đang đăng nhập. AI chỉ được gọi khi một bước bị kẹt.</p>
+  </header>
+
+  <section class="card">
+    <h2>1. Thư mục video</h2>
+    <div class="row">
+      <button id="pick">Chọn thư mục…</button>
+      <button id="regrant" hidden>Cấp lại quyền đọc/ghi</button>
+      <span id="folder" class="muted">Chưa chọn thư mục</span>
+    </div>
+    <div class="row">
+      <label class="inline">Nguồn nội dung <select id="source" disabled></select></label>
+      <button id="reload" disabled>Đọc lại</button>
+      <button id="writeBack" disabled>Ghi kết quả vào file</button>
+    </div>
+    <p class="hint">Nguồn là file Excel (<code>noi-dung-youtube.xlsx</code>, tạo bằng <code>tools/make_sheet.mjs</code>) hoặc <code>queue.json</code> trong thư mục đã chọn. Đường dẫn video/thumbnail tính từ thư mục này. <b>Nên đóng file trong Excel khi đang chạy</b> để extension ghi được link YouTube vào file.</p>
+  </section>
+
+  <section class="card">
+    <h2>2. Hàng đợi</h2>
+    <table id="jobs">
+      <thead><tr><th>#</th><th>Tiêu đề</th><th>File</th><th>Hiển thị</th><th>Trạng thái</th><th>Link</th></tr></thead>
+      <tbody><tr><td colspan="6" class="muted">Chưa có dữ liệu</td></tr></tbody>
+    </table>
+    <div class="row">
+      <button id="start" class="primary" disabled>Bắt đầu đăng</button>
+      <button id="stop" disabled>Dừng sau video hiện tại</button>
+      <button id="check">Kiểm tra selector trên tab Studio</button>
+      <label class="inline"><input type="checkbox" id="retryFailed"> Chạy lại cả video lỗi</label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>3. Cài đặt</h2>
+    <div class="grid">
+      <label>Channel ID (để trống = tự nhận từ tab Studio)
+        <input id="channelId" placeholder="UC…">
+      </label>
+      <label>AI ưu tiên (lỗi thì tự chuyển sang AI khác có key)
+        <select id="primary"></select>
+      </label>
+      <label>Số thao tác AI tối đa mỗi lần kẹt
+        <input id="maxAi" type="number" min="1" max="20">
+      </label>
+      <label class="inline"><input type="checkbox" id="aiEnabled"> Bật AI hỗ trợ khi kẹt</label>
+    </div>
+    <table id="providers">
+      <thead><tr><th>Nhà cung cấp</th><th>API key</th><th>Model</th><th>Base URL (để trống = mặc định)</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="row">
+      <button id="save">Lưu cài đặt</button>
+      <button id="testAi">Thử kết nối AI</button>
+    </div>
+    <p class="hint">Chỉ cần điền key cho AI bạn dùng. API key lưu trong <code>chrome.storage.local</code> của máy này, chỉ gửi tới máy chủ của chính nhà cung cấp đó. Qwen dùng tài khoản Trung Quốc đại lục thì đổi Base URL thành <code>https://dashscope.aliyuncs.com/compatible-mode/v1</code>. Tắt AI thì gặp lỗi tool sẽ dừng và báo bước bị kẹt.</p>
+  </section>
+
+  <section class="card">
+    <h2>Nhật ký</h2>
+    <pre id="log"></pre>
+  </section>
+
+  <script src="lib/exceljs.min.js"></script>
+  <script type="module" src="uploader.js"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+[
+  {
+    "file": "Vonia - Hướng dẫn tab Nhân bản giọng/Vonia-HuongDan-clone-giong-61s-16x9.mp4",
+    "thumbnail": "Vonia - Hướng dẫn tab Nhân bản giọng/Vonia-HuongDan-clone-giong-61s-16x9-thumbnail.jpg",
+    "title": "Hướng dẫn Vonia #1: Nhân bản giọng nói bằng AI (Voice Clone) chỉ với 10 giây âm thanh mẫu",
+    "description": "Đây là video hướng dẫn sử dụng tính năng Nhân bản giọng (Voice Clone) của phần mềm Vonia Voice Studio.\n\nTrong 1 phút bạn sẽ biết cách:\n✅ Tải lên đoạn âm thanh mẫu (khoảng 3–10 giây)\n✅ Nhập đúng lời của đoạn mẫu để giọng clone chính xác hơn\n✅ Chọn ngôn ngữ, tinh chỉnh tốc độ và các thông số sinh giọng\n✅ Nghe thử, tải về và lưu giọng vào Kho giọng để dùng lại\n\nVonia là phần mềm chuyển văn bản thành giọng nói chạy ngay trên máy của bạn (Windows, macOS, Linux): nhân bản giọng, đọc văn bản, hội thoại nhiều giọng, giọng nói sang văn bản và API cho lập trình viên.\n\n🧠 Model: OmniVoice (default, powered by k2-fsa/OmniVoice) — hỗ trợ hơn 600 ngôn ngữ, có tiếng Việt.\n💻 Mã nguồn & hướng dẫn cài đặt: https://github.com/locphamnguyen/vonia\n📩 Cần làm video hướng dẫn cho phần mềm của bạn? Zalo 0945 031 039\n\n⚠️ Chỉ nhân bản giọng khi có sự đồng ý của chủ giọng. Không dùng để mạo danh hay lừa đảo.\n\n#Vonia #OmniVoice #NhanBanGiong #VoiceClone #TextToSpeech #GiongNoiAI #AITiengViet #HuongDanPhanMem",
+    "tags": ["vonia", "omnivoice", "nhân bản giọng", "voice clone", "text to speech", "giọng nói AI", "chuyển văn bản thành giọng nói", "AI tiếng Việt", "hướng dẫn vonia"],
+    "visibility": "public",
+    "status": "Đã đăng",
+    "url": "https://youtu.be/gEeab9pnitE",
+    "uploadedAt": "2026-10-05"
+  },
+  {
+    "file": "Vonia - Hướng dẫn tab Hội thoại/Vonia-HuongDan-hoi-thoai-68s-16x9.mp4",
+    "thumbnail": "Vonia - Hướng dẫn tab Hội thoại/Vonia-HuongDan-hoi-thoai-68s-16x9-thumbnail.jpg",
+    "title": "Hướng dẫn Vonia #2: Tạo hội thoại nhiều giọng đọc AI từ kịch bản chỉ trong vài cú bấm",
+    "description": "Đây là video hướng dẫn sử dụng tab Hội thoại của phần mềm Vonia Voice Studio — biến một kịch bản nhiều nhân vật thành đoạn hội thoại có giọng đọc riêng cho từng người.\n\nTrong video bạn sẽ biết cách:\n✅ Dán kịch bản theo dạng \"Tên: lời thoại\"\n✅ Bấm Phân tích để Vonia tự nhận diện nhân vật\n✅ Gán giọng cho từng nhân vật (giọng có sẵn hoặc giọng bạn đã clone)\n✅ Tạo hội thoại, nghe lại từng câu và xuất file âm thanh\n\nPhù hợp làm podcast, truyện audio, video kịch bản, bài học ngoại ngữ, quảng cáo nhiều vai.\n\n🧠 Model: OmniVoice (default, powered by k2-fsa/OmniVoice) — hỗ trợ hơn 600 ngôn ngữ, có tiếng Việt.\n💻 Mã nguồn & hướng dẫn cài đặt: https://github.com/locphamnguyen/vonia\n📩 Cần làm video hướng dẫn cho phần mềm của bạn? Zalo 0945 031 039\n\n#Vonia #OmniVoice #HoiThoaiAI #Podcast #TextToSpeech #GiongNoiAI #AITiengViet #HuongDanPhanMem",
+    "tags": ["vonia", "omnivoice", "hội thoại AI", "nhiều giọng đọc", "podcast AI", "text to speech", "giọng nói AI", "AI tiếng Việt", "hướng dẫn vonia"],
+    "visibility": "public",
+    "status": "Đã đăng",
+    "url": "https://youtu.be/MeGyPMVkHTA",
+    "uploadedAt": "2026-10-05"
+  },
+  {
+    "file": "Vonia - Hướng dẫn tab Giọng nói sang văn bản/Vonia-HuongDan-stt-57s-16x9.mp4",
+    "thumbnail": "Vonia - Hướng dẫn tab Giọng nói sang văn bản/Vonia-HuongDan-stt-57s-16x9-thumbnail.jpg",
+    "title": "Hướng dẫn Vonia #3: Chuyển giọng nói thành văn bản và phụ đề SRT bằng AI (Speech to Text)",
+    "description": "Đây là video hướng dẫn sử dụng tab Giọng nói sang văn bản (Speech to Text) của phần mềm Vonia Voice Studio.\n\nTrong video bạn sẽ biết cách:\n✅ Tải lên file ghi âm, video hoặc đoạn họp cần gỡ băng\n✅ Chọn model nhận dạng (Whisper) và ngôn ngữ\n✅ Nhận văn bản kèm mốc thời gian, xuất phụ đề SRT\n✅ Sao chép hoặc tải kết quả về để dùng tiếp\n\nPhù hợp gỡ biên bản họp, làm phụ đề video YouTube/TikTok, kiểm tra lại lời đọc AI.\n\n🧠 Model: OmniVoice (default, powered by k2-fsa/OmniVoice) cho phần tạo giọng; nhận dạng giọng nói dùng Whisper.\n💻 Mã nguồn & hướng dẫn cài đặt: https://github.com/locphamnguyen/vonia\n📩 Cần làm video hướng dẫn cho phần mềm của bạn? Zalo 0945 031 039\n\n#Vonia #OmniVoice #SpeechToText #PhuDeSRT #Whisper #GoBang #AITiengViet #HuongDanPhanMem",
+    "tags": ["vonia", "omnivoice", "speech to text", "giọng nói sang văn bản", "phụ đề SRT", "whisper", "gỡ băng", "AI tiếng Việt", "hướng dẫn vonia"],
+    "visibility": "public",
+    "status": "Đã đăng",
+    "url": "https://youtu.be/UMhGDZTyMoY",
+    "uploadedAt": "2026-10-05"
+  },
+  {
+    "file": "Vonia - Hướng dẫn tab Cài đặt môi trường/Vonia-HuongDan-moi-truong-57s-16x9.mp4",
+    "thumbnail": "Vonia - Hướng dẫn tab Cài đặt môi trường/Vonia-HuongDan-moi-truong-57s-16x9-thumbnail.jpg",
+    "title": "Hướng dẫn Vonia #4: Cài đặt môi trường — GPU, VRAM và model để chạy AI giọng nói mượt trên máy",
+    "description": "Đây là video hướng dẫn sử dụng tab Cài đặt môi trường của phần mềm Vonia Voice Studio.\n\nTrong video bạn sẽ biết cách:\n✅ Xem Vonia đang chạy trên thiết bị nào (GPU NVIDIA, Apple Silicon hay CPU)\n✅ Theo dõi VRAM và bật tự giải phóng VRAM khi máy rảnh\n✅ Kiểm tra model đang dùng và các thiết lập quan trọng\n✅ Thiết lập để máy vừa chạy Vonia vừa làm việc khác mượt mà\n\nVonia chạy model AI ngay trên máy của bạn — không gửi dữ liệu lên máy chủ bên ngoài. Khuyến nghị GPU NVIDIA (Windows/Linux) hoặc MacBook chip M.\n\n🧠 Model: OmniVoice (default, powered by k2-fsa/OmniVoice) — hỗ trợ hơn 600 ngôn ngữ, có tiếng Việt.\n💻 Mã nguồn & hướng dẫn cài đặt: https://github.com/locphamnguyen/vonia\n📩 Cần làm video hướng dẫn cho phần mềm của bạn? Zalo 0945 031 039\n\n#Vonia #OmniVoice #CaiDat #GPU #VRAM #TextToSpeech #AITiengViet #HuongDanPhanMem",
+    "tags": ["vonia", "omnivoice", "cài đặt vonia", "GPU", "VRAM", "AI chạy trên máy", "text to speech", "giọng nói AI", "AI tiếng Việt", "hướng dẫn vonia"],
+    "visibility": "public",
+    "status": "Đã đăng",
+    "url": "https://youtu.be/mUHs6dTabto",
+    "uploadedAt": "2026-10-05"
+  },
+  {
+    "file": "Vonia - Hướng dẫn Webhook API/Vonia-HuongDan-webhook-api-56s-16x9.mp4",
+    "thumbnail": "Vonia - Hướng dẫn Webhook API/Vonia-HuongDan-webhook-api-56s-16x9-thumbnail.jpg",
+    "title": "Hướng dẫn Vonia #5: Tích hợp Webhook API & API key để tạo giọng nói AI tự động từ phần mềm của bạn",
+    "description": "Đây là video hướng dẫn sử dụng tab Webhook / API của phần mềm Vonia Voice Studio — gọi Vonia từ website, app, n8n, Zalo bot… để tạo giọng nói tự động.\n\nTrong video bạn sẽ biết cách:\n✅ Tạo API key cá nhân (và thu hồi khi cần)\n✅ Xem danh sách giọng đã đăng ký và giọng preset qua API\n✅ Gọi endpoint POST /tts với text, voice_id, ngôn ngữ, tốc độ\n✅ Nhận file âm thanh WAV/MP3 trả về để dùng ngay\n\nAPI tương thích chuẩn OpenAI (Authorization: Bearer), dễ tích hợp vào quy trình tự động hoá.\n\n🧠 Model: OmniVoice (default, powered by k2-fsa/OmniVoice) — hỗ trợ hơn 600 ngôn ngữ, có tiếng Việt.\n💻 Mã nguồn & hướng dẫn cài đặt: https://github.com/locphamnguyen/vonia\n📩 Cần làm video hướng dẫn cho phần mềm của bạn? Zalo 0945 031 039\n\n#Vonia #OmniVoice #API #Webhook #TextToSpeech #TuDongHoa #n8n #HuongDanPhanMem",
+    "tags": ["vonia", "omnivoice", "TTS API", "webhook", "API key", "text to speech API", "tự động hoá", "n8n", "giọng nói AI", "hướng dẫn vonia"],
+    "visibility": "public",
+    "status": "Đã đăng",
+    "url": "https://youtu.be/4CFR7VdBkDw",
+    "uploadedAt": "2026-10-05"
+  }
+]

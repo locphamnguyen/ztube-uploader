@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "YT Studio Uploader",
+  "version": "0.3.0",
+  "description": "Đăng video hàng loạt lên YouTube Studio ngay trong trình duyệt đang đăng nhập. AI chỉ được gọi khi một bước bị kẹt.",
+  "permissions": ["storage", "tabs", "scripting"],
+  "host_permissions": [
+    "https://studio.youtube.com/*",
+    "https://api.anthropic.com/*",
+    "https://api.openai.com/*",
+    "https://dashscope-intl.aliyuncs.com/*",
+    "https://dashscope.aliyuncs.com/*",
+    "https://api.x.ai/*"
+  ],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_title": "YT Studio Uploader" },
+  "content_scripts": [
+    {
+      "matches": ["https://studio.youtube.com/*"],
+      "js": ["studio-steps.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

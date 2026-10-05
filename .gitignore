@@ -1,0 +1,8 @@
+node_modules/
+tools/node_modules/
+*.log
+.DS_Store
+# File Excel/queue thật của người dùng (chỉ giữ mẫu trong examples/)
+noi-dung-youtube.xlsx
+queue.json
+~$*

@@ -1,0 +1,29 @@
+{
+  "defaults": {
+    "visibility": "public",
+    "madeForKids": false,
+    "alteredContent": true,
+    "videoLanguage": ["Vietnamese", "Tiếng Việt"],
+    "titleLanguage": ["Vietnamese", "Tiếng Việt"],
+    "tags": ["vonia", "omnivoice", "text to speech", "giọng nói AI", "AI tiếng Việt", "hướng dẫn vonia"]
+  },
+  "videos": [
+    {
+      "file": "Vonia - Hướng dẫn tab Nhân bản giọng/Vonia-HuongDan-clone-giong-61s-16x9.mp4",
+      "thumbnail": "Vonia - Hướng dẫn tab Nhân bản giọng/Vonia-HuongDan-clone-giong-61s-16x9-thumbnail.jpg",
+      "title": "Hướng dẫn Vonia #1: Nhân bản giọng nói bằng AI (Voice Clone) chỉ với 10 giây âm thanh mẫu",
+      "description": "Đây là video hướng dẫn sử dụng tính năng Nhân bản giọng (Voice Clone) của phần mềm Vonia Voice Studio.\n\n✅ Tải lên đoạn âm thanh mẫu (khoảng 3–10 giây)\n✅ Nhập đúng lời của đoạn mẫu để giọng clone chính xác hơn\n\n💻 Mã nguồn: https://github.com/locphamnguyen/vonia\n📩 Zalo 0945 031 039\n\n#Vonia #OmniVoice #VoiceClone",
+      "tags": ["nhân bản giọng", "voice clone"],
+      "status": "done",
+      "url": "https://youtu.be/gEeab9pnitE"
+    },
+    {
+      "file": "Vonia - Hướng dẫn tab Hội thoại/Vonia-HuongDan-hoi-thoai-68s-16x9.mp4",
+      "thumbnail": "Vonia - Hướng dẫn tab Hội thoại/Vonia-HuongDan-hoi-thoai-68s-16x9-thumbnail.jpg",
+      "title": "Hướng dẫn Vonia #2: Tạo hội thoại nhiều giọng đọc AI từ kịch bản",
+      "description": "Đây là video hướng dẫn sử dụng tab Hội thoại của phần mềm Vonia Voice Studio.\n\n#Vonia #OmniVoice #HoiThoaiAI",
+      "tags": ["hội thoại AI", "podcast AI"],
+      "visibility": "private"
+    }
+  ]
+}

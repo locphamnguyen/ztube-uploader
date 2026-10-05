@@ -1,0 +1,11 @@
+{
+  "name": "yt-studio-uploader-tools",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "sheet": "bun make_sheet.mjs"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}
