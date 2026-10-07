@@ -293,8 +293,9 @@
     },
     {
       id: "visibility",
-      label: "Chọn chế độ hiển thị",
+      label: "Chọn chế độ hiển thị / hẹn giờ",
       async run(ctx) {
+        if (ctx.job.schedule) return scheduleAt(ctx.job.schedule);
         const name = { public: "PUBLIC", unlisted: "UNLISTED", private: "PRIVATE" }[(ctx.job.visibility || "private").toLowerCase()];
         if (!name) throw new StepError(`visibility không hợp lệ: ${ctx.job.visibility}`);
         const radio = await waitFor(() => visibilityRadio(name), { what: `nút ${name}` });
@@ -349,6 +350,76 @@
       },
     },
   ];
+
+  // ---------- Hẹn giờ đăng (selector đã kiểm tra trên Studio: #second-container-expand-button,
+  // #datepicker-trigger, ytcp-date-picker #textbox input, #time-of-day-container input) ----------
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  function parseSchedule(s) {
+    const m = String(s || "").trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{2})$/);
+    if (!m) throw new StepError(`Lịch đăng sai định dạng (cần YYYY-MM-DD HH:mm): ${s}`);
+    return { y: +m[1], mo: +m[2], d: +m[3], h: +m[4], mi: +m[5] };
+  }
+  const dateText = (t) => `${MONTHS[t.mo - 1]} ${t.d}, ${t.y}`; // giao diện Studio tiếng Anh
+  const timeText = (t) => `${((t.h + 11) % 12) + 1}:${String(t.mi).padStart(2, "0")} ${t.h < 12 ? "AM" : "PM"}`;
+
+  function setInputValue(input, value) {
+    input.focus();
+    input.select?.();
+    document.execCommand("insertText", false, value);
+    if (input.value !== value) {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function pressEnter(el) {
+    for (const type of ["keydown", "keypress", "keyup"]) {
+      el.dispatchEvent(new KeyboardEvent(type, { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true }));
+    }
+  }
+
+  async function scheduleAt(when) {
+    const t = parseSchedule(when);
+    if (!$("#datepicker-trigger")) {
+      const exp = $("#second-container-expand-button") || $("#second-container");
+      if (!exp) throw new StepError('Không thấy mục "Schedule"');
+      click(exp);
+      await waitFor(() => $("#datepicker-trigger"), { what: "ô ngày hẹn giờ", timeout: 8000 });
+    }
+
+    const wantDate = dateText(t);
+    if (norm($("#datepicker-trigger").innerText) !== wantDate) {
+      click($("#datepicker-trigger"));
+      const input = await waitFor(() => $("ytcp-date-picker tp-yt-paper-input#textbox input") || $("ytcp-date-picker input"), {
+        what: "ô nhập ngày",
+        timeout: 8000,
+      });
+      setInputValue(input, wantDate);
+      // Đã kiểm tra trên Studio: Enter giả lập KHÔNG áp dụng ngày; gửi sự kiện submit của form#form thì ăn và tự đóng lịch.
+      const form = input.closest("form");
+      if (form) form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      else pressEnter(input);
+      await sleep(1200);
+    }
+    await waitFor(() => norm($("#datepicker-trigger")?.innerText) === wantDate, { what: `ngày hẹn ${wantDate}`, timeout: 6000 });
+
+    const wantTime = timeText(t);
+    const tin = await waitFor(() => $("#time-of-day-container input"), { what: "ô giờ hẹn" });
+    if (norm(tin.value) !== wantTime) {
+      setInputValue(tin, wantTime);
+      pressEnter(tin);
+      await sleep(800);
+      const item = $all("tp-yt-paper-item").find((e) => norm(e.innerText) === wantTime);
+      if (item) click(item);
+      tin.blur();
+      await sleep(800);
+    }
+    if (norm($("#time-of-day-container input")?.value) !== wantTime) {
+      throw new StepError(`Giờ hẹn chưa ăn (đang là "${$("#time-of-day-container input")?.value}", cần "${wantTime}")`);
+    }
+  }
 
   function tagsInput() {
     return $("#tags-container input#text-input") || $("ytcp-free-text-chip-bar input#text-input") || $("ytcp-free-text-chip-bar input");
@@ -446,6 +517,7 @@
       titleLanguageLabel: !!leafWithText(/^(title and description language|ngôn ngữ (của )?tiêu đề và (phần )?mô tả)$/i),
       nextButton: !!$("#next-button"),
       publicRadio: !!visibilityRadio("PUBLIC"),
+      scheduleExpand: !!($("#second-container-expand-button") || $("#datepicker-trigger")),
       doneButton: !!$("#done-button"),
     };
   }

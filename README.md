@@ -39,12 +39,13 @@ File gồm 3 sheet. Mẫu trống: [examples/noi-dung-youtube.mau.xlsx](examples
 
 | Cột | Ý nghĩa |
 |---|---|
-| Trạng thái | `Chờ đăng` (hoặc trống) = sẽ đăng · `Đã đăng` / `Bỏ qua` = bỏ qua · `Lỗi` = chỉ chạy lại khi tick "Chạy lại cả video lỗi" |
+| Trạng thái | `Chờ đăng` (hoặc trống) = sẽ đăng · `Đã đăng` / `Đã lên lịch` / `Bỏ qua` = bỏ qua · `Lỗi` = chỉ chạy lại khi tick "Chạy lại cả video lỗi" |
 | File video, Thumbnail | Đường dẫn tương đối, vd `Vonia - Hướng dẫn tab Hội thoại/Vonia-HuongDan-hoi-thoai-68s-16x9.mp4` |
 | Tiêu đề | ≤ 100 ký tự, không có `<` `>`. Cột **Số ký tự tiêu đề** tự đếm, quá 100 thì tô đỏ |
 | Mô tả | ≤ 5000 ký tự. Xuống dòng trong ô bằng **Alt+Enter** |
 | Tags | Cách nhau bằng dấu phẩy |
 | Hiển thị · Dành cho trẻ em · Có dùng AI | Chọn trong dropdown; để trống = lấy theo sheet Cài đặt |
+| **Lịch đăng** | `2026-10-08 19:30` (hoặc `08/10/2026 19:30`) để **hẹn giờ đăng công khai**; để trống = đăng ngay theo cột Hiển thị. Giờ theo múi giờ của trình duyệt. Phải sau hiện tại ít nhất 15 phút |
 | Link YouTube · Ngày đăng · Lỗi | **Extension tự điền** sau mỗi video |
 
 **Sheet "Cài đặt"**: hiển thị mặc định, dành cho trẻ em, có dùng AI, **ngôn ngữ video**, **ngôn ngữ tiêu đề & mô tả** (bắt buộc, nếu không kênh bật dịch tự động sẽ ghi đè tiêu đề bằng tiếng Anh), tags chung, và **Chân mô tả**: đoạn tự thêm vào cuối mọi mô tả (link GitHub, Zalo, hashtag chung…).
@@ -124,5 +125,5 @@ examples/            queue mẫu
 
 ## Giới hạn hiện tại
 
-- Chưa hỗ trợ: lên lịch đăng (Schedule), playlist, end screen, cards, phụ đề. Có thể thêm bước mới vào `STEPS` trong `studio-steps.js`.
+- Hẹn giờ đăng: hỗ trợ (cột Lịch đăng). Chưa hỗ trợ: playlist, end screen, cards, phụ đề. Có thể thêm bước mới vào `STEPS` trong `studio-steps.js`.
 - Selector dựa trên giao diện YouTube Studio tháng 10/2026. Giao diện thay đổi thì AI sẽ gỡ; nếu lặp lại nhiều, cập nhật selector trong `studio-steps.js`.

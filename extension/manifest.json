@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YT Studio Uploader",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Đăng video hàng loạt lên YouTube Studio ngay trong trình duyệt đang đăng nhập. AI chỉ được gọi khi một bước bị kẹt.",
   "permissions": ["storage", "tabs", "scripting"],
   "host_permissions": [

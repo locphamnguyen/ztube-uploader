@@ -32,3 +32,4 @@ td.title { max-width: 360px; }
 pre#log { margin: 0; max-height: 320px; overflow: auto; white-space: pre-wrap; font-size: 12px; }
 a { color: inherit; }
 .status-skip { color: var(--muted); }
+.status-scheduled { color: var(--ok); }

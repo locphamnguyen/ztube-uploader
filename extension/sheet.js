@@ -8,6 +8,7 @@ const HEADERS = {
   description: ["mô tả", "description"],
   tags: ["tags", "tag"],
   visibility: ["hiển thị", "visibility"],
+  schedule: ["lịch đăng", "hẹn giờ", "schedule"],
   madeForKids: ["dành cho trẻ em", "made for kids"],
   alteredContent: ["có dùng ai", "nội dung ai", "altered content"],
   url: ["link youtube", "link", "url"],
@@ -25,12 +26,35 @@ const SETTING_KEYS = {
   footer: "chân mô tả",
 };
 
-const STATUS_IN = { "đã đăng": "done", done: "done", "lỗi": "error", error: "error", "bỏ qua": "skip", skip: "skip" };
-const STATUS_OUT = { done: "Đã đăng", error: "Lỗi", running: "Đang đăng", pending: "Chờ đăng", skip: "Bỏ qua" };
+const STATUS_IN = {
+  "đã đăng": "done", done: "done", "đã lên lịch": "scheduled", scheduled: "scheduled",
+  "lỗi": "error", error: "error", "bỏ qua": "skip", skip: "skip",
+};
+const STATUS_OUT = { done: "Đã đăng", scheduled: "Đã lên lịch", error: "Lỗi", running: "Đang đăng", pending: "Chờ đăng", skip: "Bỏ qua" };
+
+const pad2 = (n) => String(n).padStart(2, "0");
+
+// Chuẩn hoá lịch đăng về "YYYY-MM-DD HH:mm". Nhận: 2026-10-08 19:30 · 08/10/2026 19:30 · ô ngày giờ của Excel.
+export function normalizeSchedule(v) {
+  if (v instanceof Date) {
+    // Excel không có múi giờ; ExcelJS trả Date theo UTC = đúng giờ ghi trong ô.
+    return `${v.getUTCFullYear()}-${pad2(v.getUTCMonth() + 1)}-${pad2(v.getUTCDate())} ${pad2(v.getUTCHours())}:${pad2(v.getUTCMinutes())}`;
+  }
+  const s = cellText(v).trim();
+  if (!s) return null;
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{2})/);
+  if (m) return `${m[1]}-${pad2(m[2])}-${pad2(m[3])} ${pad2(m[4])}:${m[5]}`;
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})[ T](\d{1,2}):(\d{2})/);
+  if (m) return `${m[3]}-${pad2(m[2])}-${pad2(m[1])} ${pad2(m[4])}:${m[5]}`;
+  return s; // để validate() báo sai định dạng
+}
 
 export function cellText(v) {
   if (v == null) return "";
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (v instanceof Date) {
+    const hasTime = v.getUTCHours() || v.getUTCMinutes();
+    return `${v.getUTCFullYear()}-${pad2(v.getUTCMonth() + 1)}-${pad2(v.getUTCDate())}${hasTime ? ` ${pad2(v.getUTCHours())}:${pad2(v.getUTCMinutes())}` : ""}`;
+  }
   if (typeof v === "object") {
     if (Array.isArray(v.richText)) return v.richText.map((t) => t.text).join("");
     if ("text" in v) return cellText(v.text);
@@ -120,6 +144,7 @@ export async function readSheet(fileHandle) {
       description,
       tags: [...new Set([...s.tags, ...splitList(get("tags"), /[,\n]/)])],
       visibility: visibility(cellText(get("visibility")), s.visibility),
+      schedule: normalizeSchedule(get("schedule")),
       madeForKids: yesNo(cellText(get("madeForKids")), s.madeForKids),
       alteredContent: yesNo(cellText(get("alteredContent")), s.alteredContent),
       videoLanguage: s.videoLanguage,

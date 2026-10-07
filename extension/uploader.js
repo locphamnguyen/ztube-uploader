@@ -24,7 +24,7 @@ function log(msg) {
   el.scrollTop = el.scrollHeight;
 }
 
-const STATUS_LABEL = { pending: "Chờ đăng", running: "Đang đăng", done: "Đã đăng", error: "Lỗi", skip: "Bỏ qua" };
+const STATUS_LABEL = { pending: "Chờ đăng", running: "Đang đăng", done: "Đã đăng", scheduled: "Đã lên lịch", error: "Lỗi", skip: "Bỏ qua" };
 
 function render() {
   const tbody = $("jobs").querySelector("tbody");
@@ -41,7 +41,7 @@ function render() {
       <td>${i + 1}</td>
       <td class="title"></td>
       <td></td>
-      <td>${j.visibility}</td>
+      <td>${j.schedule ? `⏰ ${j.schedule}` : j.visibility}</td>
       <td class="status-${status}">${STATUS_LABEL[status] || status}${j.step ? ` · ${j.step}` : ""}</td>
       <td>${j.url ? `<a href="${j.url}" target="_blank">${j.url.replace(/^https?:\/\//, "")}</a>` : ""}</td>`;
     tr.children[1].textContent = j.title;
@@ -247,7 +247,7 @@ async function readQueue() {
     return;
   }
   const count = (st) => state.jobs.filter((j) => j.status === st).length;
-  log(`Đã đọc ${src.name}: ${state.jobs.length} video — ${count("pending")} chờ đăng, ${count("done")} đã đăng, ${count("error")} lỗi, ${count("skip")} bỏ qua`);
+  log(`Đã đọc ${src.name}: ${state.jobs.length} video — ${count("pending")} chờ đăng, ${count("done")} đã đăng, ${count("scheduled")} đã lên lịch, ${count("error")} lỗi, ${count("skip")} bỏ qua`);
   render();
 }
 
@@ -287,6 +287,11 @@ function validate(j) {
   if (/[<>]/.test((j.title || "") + (j.description || ""))) p.push("YouTube không cho dùng < >");
   if ((j.tags || []).join(",").length > 500) p.push("tag > 500 ký tự");
   if (!["public", "unlisted", "private"].includes(String(j.visibility).toLowerCase())) p.push("visibility sai");
+  if (j.schedule && !["done", "scheduled", "skip"].includes(j.status)) {
+    const m = String(j.schedule).match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/);
+    if (!m) p.push(`lịch đăng sai định dạng "${j.schedule}" (cần YYYY-MM-DD HH:mm)`);
+    else if (new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5]) < Date.now() + 15 * 60 * 1000) p.push("lịch đăng phải sau hiện tại ít nhất 15 phút");
+  }
   return p;
 }
 
@@ -496,7 +501,7 @@ async function runJob(tab, chId, job) {
 }
 
 async function start() {
-  const todo = state.jobs.filter((j) => !["done", "skip"].includes(j.status) && ($("retryFailed").checked || j.status !== "error"));
+  const todo = state.jobs.filter((j) => !["done", "scheduled", "skip"].includes(j.status) && ($("retryFailed").checked || j.status !== "error"));
   const bad = todo.filter((j) => validate(j).length);
   if (bad.length) {
     log(`Có ${bad.length} video chưa hợp lệ — sửa queue.json trước (xem dòng màu đỏ)`);
@@ -523,11 +528,11 @@ async function start() {
       try {
         tab = await chrome.tabs.get(tab.id);
         job.url = await runJob(tab, chId, job);
-        job.status = "done";
+        job.status = job.schedule ? "scheduled" : "done";
         const now = new Date();
         const pad = (n) => String(n).padStart(2, "0");
-        job.uploadedAt = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-        log(`✓ #${job.index + 1} ${job.url}`);
+        job.uploadedAt = job.schedule || `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        log(`✓ #${job.index + 1} ${job.schedule ? `đã hẹn ${job.schedule} — ` : ""}${job.url}`);
       } catch (e) {
         job.status = "error";
         job.error = e.message;

@@ -20,6 +20,7 @@ export const COLUMNS = [
   { key: "description", header: "Mô tả", width: 80 },
   { key: "tags", header: "Tags", width: 40 },
   { key: "visibility", header: "Hiển thị", width: 12 },
+  { key: "schedule", header: "Lịch đăng", width: 18 },
   { key: "madeForKids", header: "Dành cho trẻ em", width: 10 },
   { key: "alteredContent", header: "Có dùng AI", width: 10 },
   { key: "url", header: "Link YouTube", width: 32 },
@@ -27,7 +28,7 @@ export const COLUMNS = [
   { key: "error", header: "Lỗi", width: 40 },
   { key: "note", header: "Ghi chú", width: 30 },
 ];
-const STATUS = ["Chờ đăng", "Đang đăng", "Đã đăng", "Lỗi", "Bỏ qua"];
+const STATUS = ["Chờ đăng", "Đang đăng", "Đã lên lịch", "Đã đăng", "Lỗi", "Bỏ qua"];
 const VISIBILITY = ["public", "unlisted", "private"];
 const YESNO = ["Có", "Không"];
 const MAX_ROWS = 1000;
@@ -48,8 +49,9 @@ const HELP = [
   "",
   "1. Mỗi dòng trong sheet Videos là một video. Đường dẫn 'File video' và 'Thumbnail' tính từ thư mục chứa file Excel này.",
   "2. Điền Tiêu đề (≤ 100 ký tự, không có < >), Mô tả (≤ 5000 ký tự, xuống dòng bằng Alt+Enter), Tags (cách nhau bằng dấu phẩy).",
-  "3. Trạng thái: để 'Chờ đăng' (hoặc trống) = sẽ đăng; 'Đã đăng' / 'Bỏ qua' = extension bỏ qua; 'Lỗi' = chỉ chạy lại khi tick 'Chạy lại cả video lỗi'.",
+  "3. Trạng thái: để 'Chờ đăng' (hoặc trống) = sẽ đăng; 'Đã đăng' / 'Đã lên lịch' / 'Bỏ qua' = extension bỏ qua; 'Lỗi' = chỉ chạy lại khi tick 'Chạy lại cả video lỗi'.",
   "4. Cột Hiển thị / Dành cho trẻ em / Có dùng AI để trống thì lấy theo sheet Cài đặt.",
+  "   Lịch đăng: ghi 'YYYY-MM-DD HH:mm' (vd 2026-10-08 19:30) hoặc 'dd/mm/yyyy HH:mm' để HẸN GIỜ đăng công khai; để trống = đăng ngay theo cột Hiển thị. Giờ theo múi giờ của trình duyệt (Việt Nam GMT+7).",
   "5. Extension tự điền Trạng thái, Link YouTube, Ngày đăng, Lỗi sau mỗi video. NÊN ĐÓNG FILE TRONG EXCEL khi đang chạy, nếu không extension không ghi được (kết quả vẫn giữ và ghi lại khi bấm 'Ghi kết quả vào Excel').",
   "6. Thêm video mới: chép file vào thư mục rồi chạy lại 'bun tools/make_sheet.mjs <thư mục>' — các dòng cũ được giữ nguyên.",
   "7. Có thể nhờ AI soạn tiêu đề/mô tả rồi dán vào đây, hoặc đưa vào file seed JSON (xem README).",
@@ -135,6 +137,7 @@ function createWorkbook() {
   const st = col("status");
   const rules = [
     ["Đã đăng", "FFE6F4EA"],
+    ["Đã lên lịch", "FFE8F0FE"],
     ["Lỗi", "FFFDECEA"],
     ["Đang đăng", "FFFFF4E5"],
   ].map(([v, c]) => ({ type: "expression", formulae: [`$${st}2="${v}"`], style: { fill: { type: "pattern", pattern: "solid", bgColor: { argb: c } } } }));
@@ -172,6 +175,7 @@ function addVideoRow(ws, v, r) {
   row.getCell(idx("description")).value = v.description || "";
   row.getCell(idx("tags")).value = Array.isArray(v.tags) ? v.tags.join(", ") : v.tags || "";
   if (v.visibility) row.getCell(idx("visibility")).value = v.visibility;
+  if (v.schedule) row.getCell(idx("schedule")).value = v.schedule;
   if (v.url) row.getCell(idx("url")).value = { text: v.url, hyperlink: v.url };
   if (v.uploadedAt) row.getCell(idx("uploadedAt")).value = v.uploadedAt;
   row.getCell(idx("description")).alignment = { wrapText: true, vertical: "top" };
