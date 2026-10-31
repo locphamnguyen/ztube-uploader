@@ -7,6 +7,8 @@
 
   const { STEPS, snapshot, performAction, selfCheck } = window.__ytu;
   const CHUNK = 8 * 1024 * 1024;
+  // Mỗi lần trang tải lại thật thì content script chạy lại với DOC_ID mới; Studio đổi URL kiểu SPA thì DOC_ID giữ nguyên.
+  const DOC_ID = Math.random().toString(36).slice(2);
   let current = null; // { job, result, running }
 
   const emit = (event) => chrome.runtime.sendMessage({ type: "job-event", ...event }).catch(() => {});
@@ -40,6 +42,8 @@
       result: current.result,
       getFile: (kind) => getFile(job.id, kind),
       log: (message) => emit({ jobId: job.id, kind: "log", message }),
+      // Báo trang điều khiển: đã bấm Publish — tab có tải lại sau đó thì vẫn tính là đã đăng, không chạy lại kẻo trùng.
+      published: () => emit({ jobId: job.id, kind: "published", url: current.result.url || null }),
     };
     for (let i = fromStep; i < STEPS.length; i++) {
       const step = STEPS[i];
@@ -62,13 +66,13 @@
       }
     }
     current.running = false;
-    emit({ jobId: job.id, kind: "done", url: current.result.url || null });
+    emit({ jobId: job.id, kind: "done", url: current.result.url || null, playlists: current.result.playlists || null });
   }
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     switch (msg?.cmd) {
       case "ping":
-        sendResponse({ ok: true, url: location.href, busy: !!current?.running });
+        sendResponse({ ok: true, url: location.href, busy: !!current?.running, docId: DOC_ID });
         return;
       case "run":
         run(msg.job, msg.fromStep || 0);

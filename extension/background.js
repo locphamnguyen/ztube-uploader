@@ -1,5 +1,5 @@
-// Bấm icon extension → mở (hoặc chuyển tới) trang điều khiển uploader.html.
-chrome.action.onClicked.addListener(async () => {
+// Bấm icon extension (hoặc nút "Trang điều khiển" trên bảng nổi ở Studio) → mở (hoặc chuyển tới) trang điều khiển uploader.html.
+async function openUploader() {
   const url = chrome.runtime.getURL("uploader.html");
   const [tab] = await chrome.tabs.query({ url });
   if (tab) {
@@ -8,4 +8,10 @@ chrome.action.onClicked.addListener(async () => {
   } else {
     await chrome.tabs.create({ url });
   }
+}
+
+chrome.action.onClicked.addListener(openUploader);
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg?.type === "open-uploader") openUploader();
 });

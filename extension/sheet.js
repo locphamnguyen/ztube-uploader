@@ -11,6 +11,7 @@ const HEADERS = {
   schedule: ["lịch đăng", "hẹn giờ", "schedule"],
   madeForKids: ["dành cho trẻ em", "made for kids"],
   alteredContent: ["có dùng ai", "nội dung ai", "altered content"],
+  playlist: ["playlist", "playlists", "danh sách phát"],
   url: ["link youtube", "link", "url"],
   uploadedAt: ["ngày đăng", "uploaded at"],
   error: ["lỗi", "error"],
@@ -24,6 +25,7 @@ const SETTING_KEYS = {
   titleLanguage: "ngôn ngữ tiêu đề & mô tả",
   tags: "tags chung",
   footer: "chân mô tả",
+  playlist: "playlist mặc định",
 };
 
 const STATUS_IN = {
@@ -110,6 +112,7 @@ function readSettings(wb) {
     titleLanguage: langs("titleLanguage").length ? langs("titleLanguage") : null,
     tags: splitList(get("tags"), /[,\n]/),
     footer: get("footer").trim(),
+    playlists: splitList(get("playlist"), /[;\n]/),
   };
 }
 
@@ -149,6 +152,8 @@ export async function readSheet(fileHandle) {
       alteredContent: yesNo(cellText(get("alteredContent")), s.alteredContent),
       videoLanguage: s.videoLanguage,
       titleLanguage: s.titleLanguage,
+      // Nhiều playlist cách nhau bằng ";" — để trống thì lấy "Playlist mặc định" ở sheet Cài đặt.
+      playlists: splitList(get("playlist"), /[;\n]/).length ? splitList(get("playlist"), /[;\n]/) : s.playlists,
       status: STATUS_IN[norm(cellText(get("status")))] || "pending",
       url: cellText(get("url")).trim() || null,
       uploadedAt: cellText(get("uploadedAt")).trim() || null,
@@ -170,6 +175,16 @@ export async function writeResults(fileHandle, jobs) {
     ws.eachRow((row, n) => { if (!found && n > 1 && cellText(row.getCell(cols.file).value).trim() === job.file) found = row; });
     return found;
   };
+  // File cũ chưa có cột Playlist: thêm ở cuối dòng tiêu đề (giữ định dạng ô tiêu đề bên cạnh) để ghi tên playlist đã vào.
+  if (!cols.playlist && jobs.some((j) => j.dirty && j.playlistsDone?.length)) {
+    const head = ws.getRow(1);
+    const last = head.cellCount;
+    cols.playlist = last + 1;
+    head.getCell(cols.playlist).value = "Playlist";
+    head.getCell(cols.playlist).style = head.getCell(last).style;
+    ws.getColumn(cols.playlist).width = 32;
+    head.commit();
+  }
   let written = 0;
   for (const job of jobs) {
     if (!job.dirty) continue;
@@ -177,12 +192,18 @@ export async function writeResults(fileHandle, jobs) {
     if (!row) continue;
     if (cols.status) row.getCell(cols.status).value = STATUS_OUT[job.status] || job.status;
     if (cols.url && job.url) row.getCell(cols.url).value = { text: job.url, hyperlink: job.url };
+    if (cols.playlist && job.playlistsDone?.length) row.getCell(cols.playlist).value = job.playlistsDone.join("; ");
     if (cols.uploadedAt && job.uploadedAt) row.getCell(cols.uploadedAt).value = job.uploadedAt;
     if (cols.error) row.getCell(cols.error).value = job.error || null;
     row.commit();
     written++;
   }
   if (!written) return 0;
+  // File đã mở/lưu bằng Excel có định dạng điều kiện kiểu x14: ExcelJS đọc mất công thức rồi
+  // vỡ khi ghi (model.formulae undefined) — bỏ các luật đó, giữ phần dữ liệu.
+  ws.conditionalFormattings = (ws.conditionalFormattings || [])
+    .map((cf) => ({ ...cf, rules: (cf.rules || []).filter((r) => !/^(cellIs|expression)$/.test(r.type) || r.formulae?.length) }))
+    .filter((cf) => cf.rules.length);
   const out = await wb.xlsx.writeBuffer();
   const w = await fileHandle.createWritable();
   await w.write(out);

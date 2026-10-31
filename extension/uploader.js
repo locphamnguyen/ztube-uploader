@@ -14,6 +14,7 @@ const state = {
   settings: {},
   files: new Map(),  // `${jobId}:${kind}` -> File
   waiters: new Map(),// jobId -> (event) => void
+  logLines: [],      // nhật ký gần đây, gửi sang bảng nổi trên trang Studio
 };
 
 // ---------------- log & giao diện ----------------
@@ -22,6 +23,32 @@ function log(msg) {
   const el = $("log");
   el.textContent += line + "\n";
   el.scrollTop = el.scrollHeight;
+  state.logLines.push(line);
+  if (state.logLines.length > 300) state.logLines.splice(0, state.logLines.length - 300);
+  pushOverlay();
+}
+
+// ---------------- bảng nổi trên trang Studio (overlay.js) ----------------
+function overlayData() {
+  return {
+    running: state.running,
+    canStart: !state.running && !!state.jobs.length,
+    source: state.source?.name || "",
+    jobs: state.jobs.map((j, i) => ({ n: i + 1, title: j.title, file: j.file, status: j.status || "pending", step: j.step, url: j.url, error: j.error })),
+    logs: state.logLines.slice(-200),
+  };
+}
+
+let overlayTimer = null;
+function pushOverlay() {
+  if (overlayTimer) return;
+  overlayTimer = setTimeout(async () => {
+    overlayTimer = null;
+    const data = overlayData();
+    for (const t of await chrome.tabs.query({ url: "https://studio.youtube.com/*" }).catch(() => [])) {
+      chrome.tabs.sendMessage(t.id, { cmd: "overlay", data }).catch(() => {});
+    }
+  }, 150);
 }
 
 const STATUS_LABEL = { pending: "Chờ đăng", running: "Đang đăng", done: "Đã đăng", scheduled: "Đã lên lịch", error: "Lỗi", skip: "Bỏ qua" };
@@ -62,6 +89,7 @@ function render() {
   });
   $("start").disabled = state.running || !state.jobs.length;
   $("stop").disabled = !state.running;
+  pushOverlay();
 }
 
 // ---------------- cài đặt ----------------
@@ -330,6 +358,15 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === "job-event") {
     if (!msg.quiet || msg.kind !== "log") onJobEvent(msg);
   }
+  if (msg?.type === "overlay-sync") {
+    sendResponse(overlayData());
+    return;
+  }
+  if (msg?.type === "overlay-cmd") {
+    if (msg.action === "start" && !state.running) $("start").click();
+    if (msg.action === "stop" && state.running) $("stop").click();
+    sendResponse({ ok: true });
+  }
 });
 
 function onJobEvent(ev) {
@@ -339,6 +376,10 @@ function onJobEvent(ev) {
     job.step = ev.label;
     log(`#${job.index + 1} → ${ev.label}`);
     render();
+  }
+  if (ev.kind === "published" && job) {
+    job.published = true;
+    if (ev.url) job.publishedUrl = ev.url;
   }
   if (ev.kind === "done" || ev.kind === "error") state.waiters.get(ev.jobId)?.(ev);
 }
@@ -379,7 +420,7 @@ async function waitContent(tabId) {
       if (r?.ok) return r;
     } catch (_) {
       if (i === 10) {
-        await chrome.scripting.executeScript({ target: { tabId }, files: ["studio-steps.js", "content.js"] }).catch(() => {});
+        await chrome.scripting.executeScript({ target: { tabId }, files: ["studio-steps.js", "content.js", "overlay.js"] }).catch(() => {});
       }
     }
     await sleep(500);
@@ -426,18 +467,36 @@ async function captureStudio(tab) {
 // ---------------- chạy ----------------
 function runSteps(tabId, job, fromStep) {
   return new Promise(async (resolve, reject) => {
-    // Trang tải lại giữa chừng = mất trạng thái hộp thoại; không tự chạy lại để tránh đăng trùng.
-    const onNav = (id, info) => {
-      if (id === tabId && info.status === "loading") {
-        finish();
+    const docId = (await send(tabId, { cmd: "ping" }).catch(() => null))?.docId;
+    let settled = false;
+    let checking = false;
+    // Studio đổi URL kiểu SPA (vd sau khi đóng hộp "Video published") cũng báo status "loading" — chỉ coi là tải lại
+    // khi content script trả về DOC_ID khác (trang mới) hoặc không trả lời.
+    // Tải lại thật = mất trạng thái hộp thoại; không tự chạy lại để tránh đăng trùng.
+    const onNav = async (id, info) => {
+      if (id !== tabId || info.status !== "loading" || checking || settled) return;
+      checking = true;
+      await sleep(2000);
+      const r = await send(tabId, { cmd: "ping" }).catch(() => null);
+      checking = false;
+      if (settled || (docId && r?.docId === docId)) return;
+      finish();
+      if (job.published && job.publishedUrl) {
+        log("  Tab Studio tải lại sau khi đã bấm Publish — vẫn tính là đã đăng");
+        resolve({ kind: "done", url: job.publishedUrl });
+      } else if (job.published) {
+        reject(new Error("Đã bấm Publish nhưng tab tải lại trước khi lấy được link — lấy link trong mục Nội dung, đừng chạy lại kẻo đăng trùng"));
+      } else {
         reject(new Error("Tab Studio bị tải lại giữa chừng — kiểm tra mục Nội dung xem có bản nháp dở không rồi chạy lại"));
       }
     };
     const finish = () => {
+      settled = true;
       state.waiters.delete(job.id);
       chrome.tabs.onUpdated.removeListener(onNav);
     };
     state.waiters.set(job.id, (ev) => {
+      if (settled) return;
       finish();
       resolve(ev);
     });
@@ -475,6 +534,8 @@ async function aiRecover(tab, job, failure) {
 }
 
 async function runJob(tab, chId, job) {
+  job.published = false;
+  job.publishedUrl = "";
   await chrome.tabs.update(tab.id, { url: `https://studio.youtube.com/channel/${chId}/videos/upload?d=ud` });
   await waitTabComplete(tab.id);
   await waitContent(tab.id);
@@ -484,7 +545,11 @@ async function runJob(tab, chId, job) {
   const failsAt = {};
   for (;;) {
     const ev = await runSteps(tab.id, job, fromStep);
-    if (ev.kind === "done") return ev.url;
+    if (ev.kind === "done") {
+      // Tên playlist thật đã tick trên kênh — ghi lại vào cột Playlist (Excel ghi tên cũ / "+Tên mới" / mã PL… đều thành tên).
+      if (ev.playlists?.length) job.playlistsDone = ev.playlists;
+      return ev.url;
+    }
 
     log(`  ✗ ${ev.label}: ${ev.message}`);
     failsAt[ev.index] = (failsAt[ev.index] || 0) + 1;

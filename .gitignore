@@ -6,3 +6,5 @@ tools/node_modules/
 noi-dung-youtube.xlsx
 queue.json
 ~$*
+# Script dùng một lần trên máy riêng (đường dẫn cục bộ)
+tools/_*.mjs

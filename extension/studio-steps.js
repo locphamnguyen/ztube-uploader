@@ -131,6 +131,155 @@
   const descBox = () => $("#description-textarea #textbox") || $("ytcp-social-suggestions-textbox#description-textarea [contenteditable]");
   const uploadInput = () => document.querySelector('input[type=file][name="Filedata"]');
 
+  // ---------- Playlist (selector đã kiểm tra trên Studio 10/2026: ytcp-video-metadata-playlists → ytcp-playlist-dialog,
+  // ô tìm input#search-input, mỗi dòng li có .label-text + #checkbox[role=checkbox], nút ytcp-button.done-button) ----------
+  const playlistDialog = () =>
+    [...document.querySelectorAll("ytcp-playlist-dialog")].find((d) => visible(d.querySelector("tp-yt-paper-dialog") || d));
+
+  // So tên playlist: bỏ dấu tiếng Việt, hoa/thường, dấu câu ("Hướng dẫn ZCRM Web," ≡ "huong dan zcrm web").
+  const foldName = (s) =>
+    norm(s).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/gi, "d").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+
+  // Ô Playlist trong Excel nhận: mã playlist (PL…), link có "list=PL…", hoặc tên.
+  const playlistIdOf = (s) => (s.match(/[?&]list=([\w-]+)/) || s.match(/^(PL[\w-]{8,})$/) || [])[1] || null;
+
+  // Danh sách playlist của kênh: iron-list giữ đủ { id, label, checked } kể cả dòng chưa vẽ (Studio 10/2026, mã ngắn
+  // dạng "PLRUnAbkBHiDE" mở được youtube.com/playlist?list=…). Không đọc được thì lấy từ các dòng đang vẽ.
+  function channelPlaylists(dlg) {
+    const items = dlg.querySelector("tp-yt-iron-list")?.items;
+    if (Array.isArray(items) && items.length && items[0].label != null)
+      return items.map((it) => ({ id: it.id || null, label: norm(it.label) }));
+    return [...dlg.querySelectorAll("#playlists-list li")].map((li) => ({
+      id: li.querySelector("ytcp-checkbox-lit")?.getAttribute("test-id") || null,
+      label: norm((li.querySelector(".label-text") || li).textContent),
+    }));
+  }
+
+  // Tên trong Excel không trùng hẳn (playlist bị đổi tên, thêm/bớt chữ):
+  //  1. "chứa trọn": mọi từ của tên này nằm trong tên kia (≥ 2 từ) — vd Excel "Hướng dẫn sử dụng ZCRM Web, Desktop"
+  //     ⊇ kênh "Hướng dẫn ZCRM Web". Đúng MỘT playlist thoả thì chọn; nhiều playlist thoả thì không đoán.
+  //  2. không playlist nào "chứa trọn": chấm điểm theo từ, từ hiếm trên kênh nặng hơn ("hướng dẫn" có ở mọi playlist
+  //     nên gần như không tính); chỉ nhận khi đủ cao và bỏ xa playlist thứ hai.
+  function closestPlaylist(name, list) {
+    const toks = (s) => new Set(foldName(s).split(" ").filter(Boolean));
+    const df = new Map();
+    list.forEach((p) => toks(p.label).forEach((t) => df.set(t, (df.get(t) || 0) + 1)));
+    const w = (t) => Math.log((list.length + 1) / ((df.get(t) || 0) + 0.5));
+    const want = toks(name);
+    const within = (a, b) => a.size >= 2 && [...a].every((t) => b.has(t));
+    const scored = list
+      .map((p) => {
+        const have = toks(p.label);
+        const all = new Set([...want, ...have]);
+        let inter = 0, uni = 0;
+        all.forEach((t) => { uni += w(t); if (want.has(t) && have.has(t)) inter += w(t); });
+        return { ...p, score: uni ? inter / uni : 0, contained: within(have, want) || within(want, have) };
+      })
+      .sort((a, b) => b.score - a.score);
+    const top = scored.slice(0, 3);
+    const contained = scored.filter((p) => p.contained);
+    if (contained.length) return { pick: contained.length === 1 ? contained[0] : null, top: contained.length > 1 ? contained.slice(0, 3) : top };
+    const [best, second] = scored;
+    const ok = best && best.score >= 0.5 && best.score - (second?.score || 0) >= 0.15;
+    return { pick: ok ? best : null, top };
+  }
+
+  function resolvePlaylist(want, list) {
+    const id = playlistIdOf(want);
+    if (id) {
+      const p = list.find((x) => x.id === id || (x.id && (id.startsWith(x.id) || x.id.startsWith(id))));
+      return p ? { p, how: "mã" } : { top: [] };
+    }
+    const exact = list.filter((x) => foldName(x.label) === foldName(want));
+    if (exact.length === 1) return { p: exact[0], how: exact[0].label === want ? "tên" : "tên (khác hoa/thường, dấu)" };
+    const { pick, top } = closestPlaylist(want, list);
+    return pick ? { p: pick, how: `gần đúng ${pick.score.toFixed(2)}` } : { top };
+  }
+
+  // Tạo playlist mới ngay trong hộp chọn playlist (Studio 10/2026: nút ytcp-button.new-playlist-button → menu
+  // tp-yt-paper-item[test-id=new_playlist] → ytcp-playlist-creation-dialog: #title-textarea #textbox, #create-button;
+  // hiển thị mặc định Public). Chỉ gọi khi Excel ghi "+Tên" nên gõ sai chữ không đẻ ra playlist trùng.
+  async function createPlaylist(name, dlg) {
+    const creation = () => [...document.querySelectorAll("ytcp-playlist-creation-dialog")].find((d) => visible(d.querySelector("#create-button")));
+    click(await waitFor(() => $("ytcp-button.new-playlist-button", dlg), { what: 'nút "New playlist"', timeout: 6000 }));
+    click(await waitFor(() => $("tp-yt-paper-item[test-id=new_playlist]"), { what: 'mục "New playlist"', timeout: 6000 }));
+    const host = await waitFor(creation, { what: "hộp tạo playlist", timeout: 8000 });
+    await setEditableVerified(() => $("#title-textarea #textbox", host), name, "tên playlist mới");
+    click(host.querySelector("#create-button"));
+    await waitFor(() => !creation(), { what: "tạo playlist xong", timeout: 15000 });
+    return waitFor(() => channelPlaylists(dlg).find((p) => p.label === name), { what: `playlist mới "${name}" trong danh sách`, timeout: 10000 });
+  }
+
+  async function addToPlaylists(names, ctx) {
+    const scope = $("ytcp-uploads-dialog") || document;
+    const box = await waitFor(() => $("ytcp-video-metadata-playlists", scope) || $("ytcp-video-metadata-playlists"), {
+      what: 'ô "Playlists"',
+      timeout: 10000,
+    });
+    if (!playlistDialog()) click(box.querySelector("ytcp-dropdown-trigger") || box);
+    const dlg = await waitFor(playlistDialog, { what: "hộp chọn playlist", timeout: 8000 });
+    const list = await waitFor(() => { const l = channelPlaylists(dlg); return l.length ? l : null; }, { what: "danh sách playlist", timeout: 8000 })
+      .catch(() => []);
+    const search = dlg.querySelector("input#search-input");
+    const missing = [];
+    ctx.result.playlists = ctx.result.playlists || [];
+    for (const raw of names) {
+      // "+Tên" = playlist mới: có rồi (trùng tên, kể cả lần chạy trước đã tạo) thì dùng, chưa có thì tạo.
+      const isNew = raw.startsWith("+");
+      const want = isNew ? norm(raw.slice(1)) : raw;
+      let { p, how, top } = isNew
+        ? (() => { const same = list.filter((x) => foldName(x.label) === foldName(want)); return same.length === 1 ? { p: same[0], how: "tên" } : {}; })()
+        : resolvePlaylist(want, list);
+      if (!p && isNew && want) {
+        if (search) setInputValue(search, "");
+        p = await createPlaylist(want, dlg);
+        list.push(p);
+        how = "tạo mới";
+        ctx.log(`Đã tạo playlist mới "${p.label}"${p.id ? ` (${p.id})` : ""} — hiển thị Public`);
+      }
+      if (!p) {
+        const goiY = top?.length ? ` — gần nhất: ${top.map((t) => `"${t.label}"`).join(", ")}` : "";
+        missing.push(`"${want}"${goiY}`);
+        continue;
+      }
+      // Đã tick sẵn (playlist vừa tạo được Studio tự tick, hoặc chạy lại) → khỏi tìm dòng.
+      const ticked = () => p.id && (dlg.querySelector("tp-yt-iron-list")?.items || []).some((it) => it.id === p.id && it.checked);
+      if (!ticked()) {
+        // Danh sách là iron-list (chỉ vẽ dòng đang thấy) → lọc bằng ô tìm theo tên thật rồi chọn đúng dòng (ưu tiên theo mã).
+        // Ô tìm có lúc chưa kịp nhận playlist vừa tạo → thử lại với ô tìm trống.
+        const findRow = () =>
+          [...dlg.querySelectorAll("#playlists-list li")].find(
+            (li) =>
+              visible(li) &&
+              (p.id ? li.querySelector(`ytcp-checkbox-lit[test-id="${CSS.escape(p.id)}"]`) : norm((li.querySelector(".label-text") || li).textContent) === p.label)
+          );
+        let row = null;
+        for (const q of search ? [p.label, ""] : [null]) {
+          if (q != null) setInputValue(search, q);
+          row = await waitFor(findRow, { what: `playlist "${p.label}"`, timeout: 5000 }).catch(() => null);
+          if (row) break;
+        }
+        if (!row) {
+          missing.push(`"${want}" (thấy "${p.label}" nhưng không bấm được dòng)`);
+          continue;
+        }
+        const cb = row.querySelector("#checkbox[role=checkbox]") || row.querySelector("[role=checkbox]");
+        if (!isChecked(cb)) {
+          click(cb);
+          await waitFor(() => isChecked(cb), { what: `tick playlist "${p.label}"`, timeout: 4000 });
+        }
+      }
+      if (!ctx.result.playlists.includes(p.label)) ctx.result.playlists.push(p.label);
+      ctx.log(p.label === want ? `Playlist: ${p.label}` : `Playlist: Excel ghi "${want}" → chọn "${p.label}"${p.id ? ` (${p.id})` : ""} theo ${how}. Cột Playlist sẽ ghi lại tên đúng.`);
+    }
+    if (search) setInputValue(search, "");
+    const done = dlg.querySelector("ytcp-button.done-button") ||
+      [...dlg.querySelectorAll("ytcp-button, button")].find((b) => visible(b) && /^(done|xong)$/i.test(norm(b.innerText)));
+    if (done) click(done);
+    await waitFor(() => !playlistDialog(), { what: "đóng hộp chọn playlist", timeout: 6000 });
+    if (missing.length) throw new StepError(`Không thấy playlist trên kênh: ${missing.join("; ")} (tạo playlist, hoặc ghi tên đúng / mã PL… vào Excel)`);
+  }
+
   const STEPS = [
     {
       id: "open-dialog",
@@ -206,6 +355,16 @@
       },
     },
     {
+      id: "playlist",
+      label: "Thêm vào playlist",
+      optional: true,
+      async run(ctx) {
+        const names = [].concat(ctx.job.playlists || ctx.job.playlist || []).map(norm).filter(Boolean);
+        if (!names.length) return;
+        await addToPlaylists(names, ctx);
+      },
+    },
+    {
       id: "audience",
       label: "Chọn đối tượng (dành cho trẻ em?)",
       async run(ctx) {
@@ -275,7 +434,15 @@
       async run(ctx) {
         // Bắt buộc: để mặc định English thì kênh bật dịch tự động sẽ ghi đè tiêu đề/mô tả bằng bản tiếng Anh.
         if (!ctx.job.titleLanguage) return;
-        await selectDropdown(/^(title and description language|ngôn ngữ (của )?tiêu đề và (phần )?mô tả)$/i, toRegexList(ctx.job.titleLanguage), "Title and description language");
+        const labelRe = /^(title and description language|ngôn ngữ (của )?tiêu đề và (phần )?mô tả)$/i;
+        // Hộp upload bản mới (10/2026) có lúc không vẽ ô này: Studio tự lấy theo ngôn ngữ video
+        // (đã kiểm: video bị kẹt ở bước này vẫn ra "Vietnamese" trên trang sửa). Không thấy ô thì bỏ qua.
+        try {
+          await waitFor(() => leafWithText(labelRe), { what: `ô "Title and description language"`, timeout: 6000 });
+        } catch {
+          return;
+        }
+        await selectDropdown(labelRe, toRegexList(ctx.job.titleLanguage), "Title and description language");
       },
     },
     {
@@ -326,12 +493,21 @@
       id: "publish",
       label: "Đăng / lưu video",
       async run(ctx) {
-        const link = $('a[href*="youtu.be/"]') || $('a[href*="youtube.com/shorts/"]');
+        // Link nằm ở cột bên phải hộp upload; ở bước Visibility nó có thể bị che nên tìm cả phần tử ẩn.
+        const dlg = document.querySelector("ytcp-uploads-dialog") || document;
+        const link = $('a[href*="youtu.be/"]') || $('a[href*="youtube.com/shorts/"]') ||
+          dlg.querySelector('a[href*="youtu.be/"], a[href*="youtube.com/shorts/"]');
         if (link) ctx.result.url = link.href;
         const done = await waitFor(() => $("#done-button"), { what: "nút Publish/Save" });
         click(done);
+        // Sau khi bấm Publish, Studio hiện "Video published" (share dialog) — hoặc, nếu bản SD chưa xử lý xong,
+        // hộp "Video processing … Close". Hộp này phải đóng thì mới mở được hộp upload video kế tiếp.
+        const doneDialog = () =>
+          [...document.querySelectorAll("ytcp-video-share-dialog, ytcp-uploads-still-processing-dialog, ytcp-dialog, tp-yt-paper-dialog")].find(
+            (d) => visible(d) && /video published|video processing|đã xuất bản video|đang xử lý video/i.test(norm(d.innerText))
+          );
         await waitFor(
-          () => $("ytcp-video-share-dialog") || $("ytcp-prechecks-warning-dialog") || !$("ytcp-uploads-dialog"),
+          () => $("ytcp-video-share-dialog") || $("ytcp-prechecks-warning-dialog") || doneDialog() || !$("ytcp-uploads-dialog"),
           { what: "xác nhận đã đăng", timeout: 30000 }
         );
         const warn = $("ytcp-prechecks-warning-dialog");
@@ -341,12 +517,28 @@
           click(ok);
           await sleep(2000);
         }
-        const share = $("ytcp-video-share-dialog");
-        const shareLink = share && share.querySelector('a[href*="youtu"]');
-        if (shareLink) ctx.result.url = shareLink.href;
+        ctx.published?.();
+        // Hộp "Video published" hiện TRỄ vài giây sau khi hộp upload đóng: phải chờ nó hiện, bấm Close và chờ đóng hẳn,
+        // nếu không hộp upload của video kế tiếp không mở được. Sau đó có thể còn hộp "Video processing" — đóng nốt.
+        for (let n = 0; n < 3; n++) {
+          const d = await waitFor(doneDialog, { what: 'hộp "Video published"', timeout: n ? 5000 : 30000 }).catch(() => null);
+          if (!d) break;
+          const shareLink = d.querySelector('a[href*="youtu.be/"], a[href*="youtube.com/shorts/"]');
+          if (shareLink) {
+            ctx.result.url = shareLink.href;
+            ctx.published?.();
+          }
+          const close =
+            [...d.querySelectorAll("ytcp-button, button")].find((b) => visible(b) && /^(close|đóng)$/i.test(norm(b.innerText))) ||
+            $("#close-button", d);
+          if (!close) throw new StepError('Không thấy nút Close trên hộp "Video published"');
+          click(close);
+          await waitFor(() => !visible(d) || !/video published|video processing|đã xuất bản video|đang xử lý video/i.test(norm(d.innerText)), {
+            what: 'đóng hộp "Video published"',
+            timeout: 10000,
+          });
+        }
         if (!ctx.result.url) throw new StepError("Đã bấm đăng nhưng không lấy được link video");
-        const close = share && ($("#close-button", share) || [...share.querySelectorAll("ytcp-button, button")].find((b) => /close|đóng/i.test(norm(b.innerText))));
-        if (close) click(close);
       },
     },
   ];
@@ -522,5 +714,5 @@
     };
   }
 
-  window.__ytu = { STEPS, StepError, snapshot, performAction, selfCheck, sleep };
+  window.__ytu = { STEPS, StepError, snapshot, performAction, selfCheck, sleep, addToPlaylists };
 })();

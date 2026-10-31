@@ -107,10 +107,38 @@ async function callAnthropic(cfg, prompt, screenshot) {
   return call.input;
 }
 
+// OpenAI chính hãng: dùng /responses. Model mới (vd gpt-6-luna) từ chối function tools kèm suy luận ở
+// /chat/completions ("use /v1/responses or set reasoning_effort to 'none'"); /responses nhận được mọi model hiện hành.
+async function callOpenAIResponses(cfg, prompt, screenshot) {
+  const content = [{ type: "input_text", text: prompt }];
+  if (screenshot) content.push({ type: "input_image", image_url: screenshot });
+  const data = await postJson(
+    `${cfg.baseUrl}/responses`,
+    { authorization: `Bearer ${cfg.key}` },
+    {
+      model: cfg.model,
+      instructions: SYSTEM,
+      input: [{ role: "user", content }],
+      tools: [{ type: "function", name: "act", description: ACT_DESC, parameters: ACT_SCHEMA }],
+      tool_choice: { type: "function", name: "act" },
+      max_output_tokens: 4000, // gồm cả token suy luận
+      store: false,
+    }
+  );
+  const call = (data.output || []).find((o) => o.type === "function_call" && o.name === "act");
+  if (call) return JSON.parse(call.arguments || "{}");
+  const text = (data.output || []).flatMap((o) => o.content || []).map((c) => c.text || "").join("\n");
+  const m = text.match(/\{[\s\S]*\}/);
+  if (m) return JSON.parse(m[0]);
+  throw new Error(data.incomplete_details?.reason ? `không trả về thao tác (${data.incomplete_details.reason})` : "không trả về thao tác");
+}
+
 async function callOpenAICompatible(cfg, prompt, screenshot) {
+  if (/api\.openai\.com/i.test(cfg.baseUrl)) return callOpenAIResponses(cfg, prompt, screenshot);
   const content = screenshot
     ? [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: screenshot } }]
     : prompt;
+  // Qwen/Grok/cổng tương thích khác: chuẩn chat completions.
   const data = await postJson(
     `${cfg.baseUrl}/chat/completions`,
     { authorization: `Bearer ${cfg.key}` },
